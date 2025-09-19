@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Customer {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  company     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  salesOrders SalesOrder[]
+
+  @@map("customers")
+}
+
+model Supplier {
+  id          Int      @id @default(autoincrement())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  contactPerson String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  procurementOrders ProcurementOrder[]
+
+  @@map("suppliers")
+}
+
+model Asset {
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String?
+  category        String
+  status          String   @default("active")
+  purchasePrice   Decimal  @db.Decimal(10, 2)
+  currentValue    Decimal? @db.Decimal(10, 2)
+  purchaseDate    DateTime
+  warrantyExpiry  DateTime?
+  location        String?
+  serialNumber    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  maintenanceRecords MaintenanceRecord[]
+
+  @@map("assets")
+}
+
+model ProcurementOrder {
+  id          Int      @id @default(autoincrement())
+  orderNumber String   @unique
+  supplierId  Int
+  status      String   @default("pending")
+  totalAmount Decimal  @db.Decimal(10, 2)
+  orderDate   DateTime @default(now())
+  expectedDelivery DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+  items    ProcurementItem[]
+
+  @@map("procurement_orders")
+}
+
+model ProcurementItem {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  assetName   String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  totalPrice  Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+
+  order ProcurementOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("procurement_items")
+}
+
+model SalesOrder {
+  id          Int      @id @default(autoincrement())
+  orderNumber String   @unique
+  customerId  Int
+  status      String   @default("pending")
+  totalAmount Decimal  @db.Decimal(10, 2)
+  orderDate   DateTime @default(now())
+  deliveryDate DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  items    SalesItem[]
+
+  @@map("sales_orders")
+}
+
+model SalesItem {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  assetName   String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  totalPrice  Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+
+  order SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("sales_items")
+}
+
+model MaintenanceRecord {
+  id          Int      @id @default(autoincrement())
+  assetId     Int
+  type        String   // 'preventive', 'repair', 'inspection'
+  description String
+  cost        Decimal? @db.Decimal(10, 2)
+  performedBy String?
+  performedAt DateTime @default(now())
+  nextDue     DateTime?
+  createdAt   DateTime @default(now())
+
+  asset Asset @relation(fields: [assetId], references: [id])
+
+  @@map("maintenance_records")
+}

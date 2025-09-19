@@ -9,6 +9,7 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { ThemeProvider } from "./lib/contexts/ThemeContext";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -41,8 +42,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+import AppLayout from "~/components/Layout";
+
 export default function App() {
-  return <Outlet />;
+  return (
+    <ThemeProvider>
+      <AppLayout>
+        <Outlet />
+      </AppLayout>
+    </ThemeProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

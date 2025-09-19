@@ -1,13 +1,13 @@
 import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+import { Dashboard } from "~/components/pages/Dashboard";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "采购销售资产管理 - 仪表板" },
+    { name: "description", content: "企业采购销售资产管理系统" },
   ];
 }
 
 export default function Home() {
-  return <Welcome />;
+  return <Dashboard />;
 }
