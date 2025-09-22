@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@remix-run/react";
 import { Menu, X, FileText, ChevronDown, Plus, List, PieChart, TrendingUp, UserPlus, Shield, User, Settings, LogOut, Key } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThemeSelector } from "~/components/ThemeSelector";
 import { LayoutToggle } from "~/components/LayoutToggle";
 import { Button } from "~/components/ui/button";
@@ -26,7 +26,7 @@ import {
 export function Header() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [clickedItem, setClickedItem] = useState<string | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const { layoutMode, isSidebarOpen, setIsSidebarOpen } = useLayout();
 
@@ -62,6 +62,35 @@ export function Header() {
       return newSet;
     });
   };
+
+  // 处理桌面端菜单点击
+  const handleMenuClick = (itemName: string) => {
+    if (clickedItem === itemName) {
+      // 如果点击的是当前已打开的菜单，则关闭它
+      setClickedItem(null);
+    } else {
+      // 否则打开新菜单
+      setClickedItem(itemName);
+    }
+  };
+
+  // 处理点击外部区域关闭菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // 检查点击是否在菜单区域外
+      if (!target.closest('.menu-container') && !target.closest('.dropdown-menu')) {
+        setClickedItem(null);
+      }
+    };
+
+    if (clickedItem) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [clickedItem]);
 
   const navigation = [
     { name: "首页", href: "/", isDirectory: false },
@@ -205,44 +234,45 @@ export function Header() {
 
           {/* 顶部导航 - 只在顶部菜单模式显示 */}
           {layoutMode === "topbar" && (
-            <nav className="hidden lg:flex items-center space-x-6 text-base font-medium ml-8">
+            <nav className="hidden lg:flex items-center space-x-6 text-base font-medium ml-8 menu-container">
               {navigation.map((item) => {
                 const hasChildren = item.children && item.children.length > 0;
-                const isHovered = hoveredItem === item.name;
+                const isClicked = clickedItem === item.name;
                 const isActive = isItemActive(item);
                 
                 return (
                   <div 
                     key={item.name} 
                     className="relative group"
-                    onMouseEnter={() => setHoveredItem(item.name)}
-                    onMouseLeave={() => setHoveredItem(null)}
                   >
-                    <div className="flex items-center space-x-1">
-                      {item.isDirectory ? (
-                        <button className={cn(
-                          "flex items-center space-x-1 transition-colors hover:text-foreground/80",
-                          isActive ? "text-primary" : "text-foreground/60"
-                        )}>
-                          <span>{item.name}</span>
-                          <ChevronDown className={`h-4 w-4 transition-transform ${isHovered ? 'rotate-180' : ''}`} />
-                        </button>
-                      ) : (
-                        <Link
-                          to={item.href}
-                          className={cn(
-                            "transition-colors hover:text-foreground/80",
-                            isActive ? "text-primary" : "text-foreground/60"
-                          )}
-                        >
-                          {item.name}
-                        </Link>
-                      )}
-                    </div>
+                    {item.isDirectory ? (
+                      <button 
+                        onClick={() => handleMenuClick(item.name)}
+                        className={cn(
+                          "flex items-center space-x-1 px-3 py-2 rounded-md transition-colors hover:text-foreground/80 hover:bg-muted/50 w-full",
+                          isActive ? "text-primary bg-muted/30" : "text-foreground/60"
+                        )}
+                      >
+                        <span>{item.name}</span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${isClicked ? 'rotate-180' : ''}`} />
+                      </button>
+                    ) : (
+                      <Link
+                        to={item.href}
+                        className={cn(
+                          "block px-3 py-2 rounded-md transition-colors hover:text-foreground/80 hover:bg-muted/50",
+                          isActive ? "text-primary bg-muted/30" : "text-foreground/60"
+                        )}
+                      >
+                        {item.name}
+                      </Link>
+                    )}
                     
-                    {hasChildren && isHovered && (
-                      <div className="absolute top-full left-0 mt-1 w-48 bg-background border rounded-md shadow-lg z-50">
-                        <div className="py-2">
+                    {hasChildren && isClicked && (
+                      <div 
+                        className="absolute top-full left-0 mt-2 w-56 bg-background border rounded-lg shadow-xl z-50 dropdown-menu"
+                      >
+                        <div className="py-3">
                           {item.children.map((child) => {
                             const isChildActive = location.pathname === child.href;
                             return (
@@ -250,9 +280,10 @@ export function Header() {
                                 key={child.name}
                                 to={child.href}
                                 className={cn(
-                                  "block px-4 py-2 text-sm hover:text-foreground/80 hover:bg-muted transition-colors",
+                                  "block px-5 py-3 text-sm hover:text-foreground/80 hover:bg-muted transition-colors rounded-md mx-2",
                                   isChildActive ? "text-primary bg-muted" : "text-foreground/60"
                                 )}
+                                onClick={() => setClickedItem(null)}
                               >
                                 {child.name}
                               </Link>
