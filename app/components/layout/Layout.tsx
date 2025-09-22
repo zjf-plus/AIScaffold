@@ -1,43 +1,26 @@
-import { useState } from "react";
 import { Outlet } from "@remix-run/react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import { Button } from "~/components/ui/button";
-import { Menu } from "lucide-react";
+import { LayoutProvider } from "~/lib/contexts/LayoutContext";
 
-export function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+interface LayoutProps {
+  children?: React.ReactNode;
+}
 
+export function Layout({ children }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <div className="flex">
-        {/* Mobile Sidebar Toggle */}
-        <div className="md:hidden fixed top-16 left-4 z-40">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setSidebarOpen(true)}
-            className="bg-background/80 backdrop-blur"
-          >
-            <Menu className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Sidebar */}
-        <Sidebar 
-          isOpen={sidebarOpen} 
-          onClose={() => setSidebarOpen(false)} 
-        />
-
-        {/* Main Content */}
-        <main className="flex-1 md:ml-64 min-h-[calc(100vh-4rem)]">
-          <div className="p-4 md:p-6">
-            <Outlet />
+    <LayoutProvider>
+      <div className="min-h-screen bg-background">
+        <div className="flex w-full max-w-none">
+          <Sidebar />
+          <div className="flex-1 flex flex-col min-w-0">
+            <Header />
+            <main className="flex-1 p-6 w-full max-w-none">
+              {children || <Outlet />}
+            </main>
           </div>
-        </main>
+        </div>
       </div>
-    </div>
+    </LayoutProvider>
   );
 }

@@ -1,90 +1,78 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { themes, getThemeById, getDefaultTheme, type ThemeConfig } from "~/lib/config/themes";
 
-export type Theme = "light" | "dark" | "blue" | "green" | "purple";
-export type MenuMode = "sidebar" | "topbar" | "mobile";
+type ThemeProviderProps = {
+  children: React.ReactNode;
+  defaultColorTheme?: string;
+  colorThemeStorageKey?: string;
+};
 
-interface ThemeContextType {
-  theme: Theme;
-  menuMode: MenuMode;
-  setTheme: (theme: Theme) => void;
-  setMenuMode: (mode: MenuMode) => void;
-  isMobile: boolean;
-}
+type ThemeProviderState = {
+  colorTheme: string;
+  setColorTheme: (colorTheme: string) => void;
+  currentThemeConfig: ThemeConfig;
+};
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const initialState: ThemeProviderState = {
+  colorTheme: "default",
+  setColorTheme: () => null,
+  currentThemeConfig: getDefaultTheme(),
+};
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("theme") as Theme) || "light";
+const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
+
+export function ThemeProvider({
+  children,
+  defaultColorTheme = "default",
+  colorThemeStorageKey = "vite-ui-color-theme",
+  ...props
+}: ThemeProviderProps) {
+  const [colorTheme, setColorTheme] = useState<string>(
+    () => {
+      if (typeof window !== "undefined") {
+        return localStorage.getItem(colorThemeStorageKey) || defaultColorTheme;
+      }
+      return defaultColorTheme;
     }
-    return "light";
-  });
+  );
 
-  const [menuMode, setMenuMode] = useState<MenuMode>(() => {
-    if (typeof window !== "undefined") {
-      return (localStorage.getItem("menuMode") as MenuMode) || "sidebar";
-    }
-    return "sidebar";
-  });
+  const currentThemeConfig = getThemeById(colorTheme) || getDefaultTheme();
 
-  const [isMobile, setIsMobile] = useState(false);
-
+  // 应用颜色主题的 CSS 变量
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    if (typeof window === "undefined") return;
+    
+    const root = window.document.documentElement;
+    
+    // 应用当前主题的 CSS 变量
+    Object.entries(currentThemeConfig.cssVariables).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
+  }, [currentThemeConfig]);
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("theme", theme);
-      // 设置HTML元素的类名和data属性
-      document.documentElement.className = theme;
-      document.documentElement.setAttribute("data-theme", theme);
-      // 根据主题设置body类名
-      document.body.className = theme;
-    }
-  }, [theme]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("menuMode", menuMode);
-    }
-  }, [menuMode]);
-
-  // 自动切换到移动端模式
-  useEffect(() => {
-    if (isMobile && menuMode !== "mobile") {
-      setMenuMode("mobile");
-    } else if (!isMobile && menuMode === "mobile") {
-      setMenuMode("sidebar");
-    }
-  }, [isMobile, menuMode]);
+  const value = {
+    colorTheme,
+    setColorTheme: (colorTheme: string) => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(colorThemeStorageKey, colorTheme);
+      }
+      setColorTheme(colorTheme);
+    },
+    currentThemeConfig,
+  };
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        menuMode,
-        setTheme,
-        setMenuMode,
-        isMobile,
-      }}
-    >
+    <ThemeProviderContext.Provider {...props} value={value}>
       {children}
-    </ThemeContext.Provider>
+    </ThemeProviderContext.Provider>
   );
 }
 
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
+export const useTheme = () => {
+  const context = useContext(ThemeProviderContext);
+
+  if (context === undefined)
     throw new Error("useTheme must be used within a ThemeProvider");
-  }
+
   return context;
-}
+};

@@ -1,26 +1,31 @@
-// 用户模型
 export interface User {
   id: string;
-  name: string;
   email: string;
-  role: 'admin' | 'manager' | 'employee';
-  avatar?: string;
+  name?: string;
+  role: UserRole;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface UserCreateInput {
-  name: string;
+export interface CreateUserInput {
   email: string;
-  password: string;
-  role: 'admin' | 'manager' | 'employee';
-  avatar?: string;
+  name?: string;
+  role?: UserRole;
 }
 
-export interface UserUpdateInput {
-  name?: string;
+export interface UpdateUserInput {
+  id: string;
   email?: string;
-  password?: string;
-  role?: 'admin' | 'manager' | 'employee';
-  avatar?: string;
+  name?: string;
+  role?: UserRole;
 }
+
+export enum UserRole {
+  ADMIN = "ADMIN",
+  USER = "USER",
+}
+
+export const UserRoleLabels: Record<UserRole, string> = {
+  [UserRole.ADMIN]: "管理员",
+  [UserRole.USER]: "普通用户",
+};

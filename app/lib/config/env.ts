@@ -1,141 +1,142 @@
-import { config } from 'dotenv';
-import path from 'path';
+/**
+ * 环境配置管理
+ * 支持开发、测试、生产环境的不同配置
+ */
 
-// 获取当前环境
-const NODE_ENV = process.env.NODE_ENV || 'development';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-// 根据环境加载对应的配置文件
-const envFile = path.join(process.cwd(), 'app', 'lib', 'config', 'environments', `${NODE_ENV}.env`);
+export type Environment = 'development' | 'test' | 'production';
 
-// 加载环境变量
-config({ path: envFile });
-
-// 环境配置接口
-export interface EnvConfig {
-  NODE_ENV: string;
-  PORT: number;
-  HOST: string;
-  
-  // 数据库配置
-  DB_HOST: string;
-  DB_PORT: number;
-  DB_USER: string;
-  DB_PASSWORD: string;
-  DB_NAME: string;
-  
-  // 日志配置
-  LOG_LEVEL: string;
-  LOG_FILE: string;
-  
-  // 安全配置
-  SESSION_SECRET: string;
-  JWT_SECRET: string;
-  
-  // 缓存配置
-  REDIS_HOST: string;
-  REDIS_PORT: number;
-  REDIS_PASSWORD?: string;
-  
-  // 文件上传配置
-  UPLOAD_DIR: string;
-  MAX_FILE_SIZE: number;
-  
-  // 邮件配置
-  SMTP_HOST: string;
-  SMTP_PORT: number;
-  SMTP_USER?: string;
-  SMTP_PASSWORD?: string;
-  SMTP_FROM: string;
-  
-  // 调试配置
-  DEBUG: boolean;
-  ENABLE_SWAGGER: boolean;
-  ENABLE_CORS: boolean;
-  
-  // SSL配置（生产环境）
-  SSL_CERT_PATH?: string;
-  SSL_KEY_PATH?: string;
-  
-  // 监控配置（生产环境）
-  ENABLE_MONITORING?: boolean;
-  METRICS_PORT?: number;
+export interface DatabaseConfig {
+  url: string;
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  password: string;
 }
 
-// 环境变量验证
-function validateEnv(): EnvConfig {
-  const requiredVars = [
-    'DB_HOST',
-    'DB_PORT',
-    'DB_USER',
-    'DB_PASSWORD',
-    'DB_NAME',
-    'SESSION_SECRET',
-    'JWT_SECRET'
-  ];
+export interface AppConfig {
+  nodeEnv: Environment;
+  database: DatabaseConfig;
+  sessionSecret: string;
+  port: number;
+  host: string;
+  logLevel: string;
+  debug: boolean;
+  enableDevTools: boolean;
+}
 
-  const missingVars = requiredVars.filter(varName => !process.env[varName]);
-  
-  if (missingVars.length > 0) {
-    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+// 从环境文件加载配置
+function loadEnvFile(env: Environment): Record<string, string> {
+  try {
+    // 使用绝对路径
+    const envPath = join(process.cwd(), 'app', 'lib', 'config', 'environments', `${env}.env`);
+    console.log(`Loading environment file: ${envPath}`);
+    const envContent = readFileSync(envPath, 'utf-8');
+    
+    const envVars: Record<string, string> = {};
+    const lines = envContent.split('\n');
+    
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !trimmedLine.startsWith('#')) {
+        const [key, ...valueParts] = trimmedLine.split('=');
+        if (key && valueParts.length > 0) {
+          envVars[key.trim()] = valueParts.join('=').trim();
+        }
+      }
+    }
+    
+    console.log(`Loaded environment variables:`, Object.keys(envVars));
+    return envVars;
+  } catch (error) {
+    console.warn(`Warning: Could not load ${env}.env file:`, error);
+    return {};
   }
+}
 
+// 创建配置对象的辅助函数
+function createConfig(env: Environment, envVars: Record<string, string>): AppConfig {
   return {
-    NODE_ENV: process.env.NODE_ENV || 'development',
-    PORT: parseInt(process.env.PORT || '3000', 10),
-    HOST: process.env.HOST || 'localhost',
-    
-    DB_HOST: process.env.DB_HOST!,
-    DB_PORT: parseInt(process.env.DB_PORT || '3306', 10),
-    DB_USER: process.env.DB_USER!,
-    DB_PASSWORD: process.env.DB_PASSWORD!,
-    DB_NAME: process.env.DB_NAME!,
-    
-    LOG_LEVEL: process.env.LOG_LEVEL || 'info',
-    LOG_FILE: process.env.LOG_FILE || 'logs/app.log',
-    
-    SESSION_SECRET: process.env.SESSION_SECRET!,
-    JWT_SECRET: process.env.JWT_SECRET!,
-    
-    REDIS_HOST: process.env.REDIS_HOST || 'localhost',
-    REDIS_PORT: parseInt(process.env.REDIS_PORT || '6379', 10),
-    REDIS_PASSWORD: process.env.REDIS_PASSWORD,
-    
-    UPLOAD_DIR: process.env.UPLOAD_DIR || 'uploads',
-    MAX_FILE_SIZE: parseInt(process.env.MAX_FILE_SIZE || '10485760', 10),
-    
-    SMTP_HOST: process.env.SMTP_HOST || 'localhost',
-    SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
-    SMTP_USER: process.env.SMTP_USER,
-    SMTP_PASSWORD: process.env.SMTP_PASSWORD,
-    SMTP_FROM: process.env.SMTP_FROM || 'noreply@localhost',
-    
-    DEBUG: process.env.DEBUG === 'true',
-    ENABLE_SWAGGER: process.env.ENABLE_SWAGGER === 'true',
-    ENABLE_CORS: process.env.ENABLE_CORS === 'true',
-    
-    SSL_CERT_PATH: process.env.SSL_CERT_PATH,
-    SSL_KEY_PATH: process.env.SSL_KEY_PATH,
-    
-    ENABLE_MONITORING: process.env.ENABLE_MONITORING === 'true',
-    METRICS_PORT: process.env.METRICS_PORT ? parseInt(process.env.METRICS_PORT, 10) : undefined,
+    nodeEnv: env,
+    database: {
+      url: envVars.DATABASE_URL || process.env.DATABASE_URL || '',
+      host: envVars.DB_HOST || process.env.DB_HOST || 'localhost',
+      port: parseInt(envVars.DB_PORT || process.env.DB_PORT || '3306'),
+      database: envVars.DB_NAME || process.env.DB_NAME || `procure_sales_${env}`,
+      username: envVars.DB_USER || process.env.DB_USER || 'root',
+      password: envVars.DB_PASSWORD || process.env.DB_PASSWORD || 'password',
+    },
+    sessionSecret: envVars.SESSION_SECRET || process.env.SESSION_SECRET || '',
+    port: parseInt(envVars.PORT || process.env.PORT || '8080'),
+    host: envVars.HOST || process.env.HOST || 'localhost',
+    logLevel: envVars.LOG_LEVEL || process.env.LOG_LEVEL || 'info',
+    debug: envVars.DEBUG === 'true' || process.env.DEBUG === 'true' || false,
+    enableDevTools: envVars.ENABLE_DEV_TOOLS === 'true' || process.env.ENABLE_DEV_TOOLS === 'true' || false,
   };
 }
 
-// 导出验证后的配置
-export const env = validateEnv();
+// 根据 NODE_ENV 选择配置
+function getConfig(): AppConfig {
+  const nodeEnv = (process.env.NODE_ENV as Environment) || 'development';
+  
+  // 从环境文件加载配置
+  const envVars = loadEnvFile(nodeEnv);
+  
+  // 立即设置环境变量到 process.env（用于 Prisma 等第三方库）
+  Object.entries(envVars).forEach(([key, value]) => {
+    if (!process.env[key]) {
+      process.env[key] = value;
+    }
+  });
+  
+  // 创建配置对象
+  const config = createConfig(nodeEnv, envVars);
+  
+  // 设置环境变量到 process.env（用于 Prisma 等第三方库）
+  setEnvironmentVariables(config);
+  
+  return config;
+}
 
-// 导出环境检查函数
-export const isDevelopment = () => env.NODE_ENV === 'development';
-export const isProduction = () => env.NODE_ENV === 'production';
-export const isTest = () => env.NODE_ENV === 'test';
+export const config = getConfig();
 
-// 导出数据库连接字符串
-export const getDatabaseUrl = () => {
-  return `mysql://${env.DB_USER}:${env.DB_PASSWORD}@${env.DB_HOST}:${env.DB_PORT}/${env.DB_NAME}`;
-};
+// 验证必需的环境变量
+export function validateConfig(): void {
+  const errors: string[] = [];
 
-// 导出Redis连接字符串
-export const getRedisUrl = () => {
-  const auth = env.REDIS_PASSWORD ? `:${env.REDIS_PASSWORD}@` : '';
-  return `redis://${auth}${env.REDIS_HOST}:${env.REDIS_PORT}`;
-};
+  if (!config.database.url) {
+    errors.push('DATABASE_URL is required');
+  }
+
+  if (config.nodeEnv === 'production') {
+    if (!config.sessionSecret || config.sessionSecret === 'dev-secret-key-change-in-production') {
+      errors.push('SESSION_SECRET must be set in production');
+    }
+    if (!config.database.password) {
+      errors.push('Database password must be set in production');
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Configuration validation failed:\n${errors.join('\n')}`);
+  }
+}
+
+// 导出环境变量设置函数
+export function setEnvironmentVariables(config: AppConfig): void {
+  // 设置数据库连接字符串
+  process.env.DATABASE_URL = config.database.url;
+  
+  // 设置其他环境变量
+  process.env.NODE_ENV = config.nodeEnv;
+  process.env.SESSION_SECRET = config.sessionSecret;
+  process.env.PORT = config.port.toString();
+  process.env.HOST = config.host;
+  process.env.LOG_LEVEL = config.logLevel;
+  process.env.DEBUG = config.debug.toString();
+  process.env.ENABLE_DEV_TOOLS = config.enableDevTools.toString();
+}

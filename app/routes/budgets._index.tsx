@@ -1,25 +1,21 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { Layout } from "~/components/layout/Layout";
-import { Dashboard } from "~/components/pages/Dashboard";
+import { BudgetList } from "~/components/pages/BudgetList";
 import { BudgetService } from "~/lib/services/BudgetService";
 import { SerializedBudget } from "~/lib/types";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const [budgets, stats] = await Promise.all([
-    BudgetService.getAllBudgets(),
-    BudgetService.getBudgetStats(),
-  ]);
-
-  return json({ budgets, stats });
+  const budgets = await BudgetService.getAllBudgets();
+  return json({ budgets });
 }
 
-export default function Index() {
-  const { budgets, stats } = useLoaderData<typeof loader>();
+export default function BudgetsIndex() {
+  const { budgets } = useLoaderData<typeof loader>();
 
   return (
     <Layout>
-      <Dashboard budgets={budgets} stats={stats} />
+      <BudgetList budgets={budgets} />
     </Layout>
   );
 }
