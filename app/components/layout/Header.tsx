@@ -27,6 +27,7 @@ export function Header() {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const { layoutMode, isSidebarOpen, setIsSidebarOpen } = useLayout();
 
   // 用户菜单处理函数
@@ -47,6 +48,19 @@ export function Header() {
       return item.children.some((child: any) => location.pathname === child.href);
     }
     return false;
+  };
+
+  // 切换移动端菜单项展开状态
+  const toggleMobileMenu = (itemName: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemName)) {
+        newSet.delete(itemName);
+      } else {
+        newSet.add(itemName);
+      }
+      return newSet;
+    });
   };
 
   const navigation = [
@@ -121,7 +135,7 @@ export function Header() {
                 <nav className="flex flex-col space-y-2">
                   {navigation.map((item) => {
                     const hasChildren = item.children && item.children.length > 0;
-                    const isExpanded = hoveredItem === item.name;
+                    const isExpanded = expandedItems.has(item.name);
                     const isActive = isItemActive(item);
                     
                     return (
@@ -129,8 +143,7 @@ export function Header() {
                         <div className="flex items-center">
                           {item.isDirectory ? (
                             <button
-                              onMouseEnter={() => setHoveredItem(item.name)}
-                              onMouseLeave={() => setHoveredItem(null)}
+                              onClick={() => toggleMobileMenu(item.name)}
                               className={cn(
                                 "flex items-center justify-between w-full px-3 py-2 text-base font-medium transition-colors hover:text-foreground/80",
                                 isActive ? "text-primary bg-muted" : "text-foreground/60"
