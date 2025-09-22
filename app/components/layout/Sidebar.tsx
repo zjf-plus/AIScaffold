@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { useLayout } from "~/lib/contexts/LayoutContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const navigation = [
   { 
@@ -82,6 +82,28 @@ export function Sidebar() {
     return null;
   }
 
+  // 根据当前路由自动展开对应的父菜单
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const parentMenus: string[] = [];
+    
+    navigation.forEach(item => {
+      if (item.children) {
+        const hasActiveChild = item.children.some(child => child.href === currentPath);
+        if (hasActiveChild) {
+          parentMenus.push(item.name);
+        }
+      }
+    });
+    
+    if (parentMenus.length > 0) {
+      setExpandedItems(prev => {
+        const newExpanded = [...new Set([...prev, ...parentMenus])];
+        return newExpanded;
+      });
+    }
+  }, [location.pathname]);
+
   const toggleExpanded = (itemName: string) => {
     setExpandedItems(prev => 
       prev.includes(itemName) 
@@ -99,8 +121,8 @@ export function Sidebar() {
   };
 
   return (
-    <div className={`border-r bg-muted/40 w-48 flex-shrink-0 ${isSidebarOpen ? 'block' : 'hidden'} md:block`}>
-      <div className="flex h-full max-h-screen flex-col gap-2">
+    <div className={`border-r bg-muted/40 w-48 flex-shrink-0 h-full ${isSidebarOpen ? 'block' : 'hidden'} md:block`}>
+      <div className="flex h-full flex-col gap-2">
         <div className="flex-1 overflow-auto py-2">
           <nav className="grid items-start px-4 text-base font-medium">
             {navigation.map((item) => {
