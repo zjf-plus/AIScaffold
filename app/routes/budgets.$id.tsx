@@ -1,7 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
 import { ArrowLeft, Edit, Trash2 } from "lucide-react";
-import { Layout } from "~/components/layout/Layout";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -43,36 +42,35 @@ export default function BudgetDetail() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/budgets">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                返回
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{budget.title}</h1>
-              <p className="text-muted-foreground">
-                经费记录详情
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" asChild>
-              <Link to={`/budgets/${budget.id}/edit`}>
-                <Edit className="mr-2 h-4 w-4" />
-                编辑
-              </Link>
-            </Button>
-            <Button variant="destructive">
-              <Trash2 className="mr-2 h-4 w-4" />
-              删除
-            </Button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/budgets">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              返回
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{budget.title}</h1>
+            <p className="text-muted-foreground">
+              经费记录详情
+            </p>
           </div>
         </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" asChild>
+            <Link to={`/budgets/${budget.id}/edit`}>
+              <Edit className="mr-2 h-4 w-4" />
+              编辑
+            </Link>
+          </Button>
+          <Button variant="destructive">
+            <Trash2 className="mr-2 h-4 w-4" />
+            删除
+          </Button>
+        </div>
+      </div>
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
@@ -159,6 +157,5 @@ export default function BudgetDetail() {
           </CardContent>
         </Card>
       </div>
-    </Layout>
   );
 }

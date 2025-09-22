@@ -1,6 +1,5 @@
 import { json, redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useNavigation } from "@remix-run/react";
-import { Layout } from "~/components/layout/Layout";
 import { BudgetForm } from "~/components/budget/BudgetForm";
 import { BudgetService } from "~/lib/services/BudgetService";
 import { CreateBudgetInput, BudgetCategory, BudgetType } from "~/lib/types";
@@ -67,15 +66,13 @@ export default function NewBudget() {
   const actionData = useActionData<typeof action>();
 
   return (
-    <Layout>
-      <div className="container mx-auto py-6">
-        <BudgetForm mode="create" />
-        {actionData?.errors?.general && (
-          <div className="mt-4 p-4 bg-destructive/10 text-destructive rounded-md">
-            {actionData.errors.general}
-          </div>
-        )}
-      </div>
-    </Layout>
+    <div className="container mx-auto py-6">
+      <BudgetForm mode="create" />
+      {actionData?.errors?.general && (
+        <div className="mt-4 p-4 bg-destructive/10 text-destructive rounded-md">
+          {actionData.errors.general}
+        </div>
+      )}
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 import { ThemeProvider } from "~/lib/contexts/ThemeContext";
+import { Layout } from "~/components/layout/Layout";
 import "./app.css";
 
 export const links: LinksFunction = () => [
@@ -27,7 +28,9 @@ export default function App() {
       </head>
       <body>
         <ThemeProvider>
-          <Outlet />
+          <Layout>
+            <Outlet />
+          </Layout>
           <ScrollRestoration />
           <Scripts />
           <LiveReload />

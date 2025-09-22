@@ -1,6 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { Layout } from "~/components/layout/Layout";
 import { Dashboard } from "~/components/pages/Dashboard";
 import { BudgetService } from "~/lib/services/BudgetService";
 import { SerializedBudget } from "~/lib/types";
@@ -17,9 +16,5 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function Index() {
   const { budgets, stats } = useLoaderData<typeof loader>();
 
-  return (
-    <Layout>
-      <Dashboard budgets={budgets} stats={stats} />
-    </Layout>
-  );
+  return <Dashboard budgets={budgets} stats={stats} />;
 }
