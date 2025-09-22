@@ -1,10 +1,11 @@
-import { Link } from "@remix-run/react";
+import { Link, useLocation } from "@remix-run/react";
 import { Menu, X, FileText, ChevronDown, Plus, List, PieChart, TrendingUp, UserPlus, Shield, User, Settings, LogOut, Key } from "lucide-react";
 import { useState } from "react";
 import { ThemeSelector } from "~/components/ThemeSelector";
 import { LayoutToggle } from "~/components/LayoutToggle";
 import { Button } from "~/components/ui/button";
 import { useLayout } from "~/lib/contexts/LayoutContext";
+import { cn } from "~/lib/utils";
 import {
   Sheet,
   SheetContent,
@@ -23,6 +24,7 @@ import {
 } from "../ui/dropdown-menu";
 
 export function Header() {
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const { layoutMode, isSidebarOpen, setIsSidebarOpen } = useLayout();
@@ -36,6 +38,15 @@ export function Header() {
   const handleLogout = () => {
     // TODO: 实现注销功能
     console.log("用户注销");
+  };
+
+  // 检查菜单项是否激活
+  const isItemActive = (item: any) => {
+    if (location.pathname === item.href) return true;
+    if (item.children) {
+      return item.children.some((child: any) => location.pathname === child.href);
+    }
+    return false;
   };
 
   const navigation = [
@@ -111,6 +122,7 @@ export function Header() {
                   {navigation.map((item) => {
                     const hasChildren = item.children && item.children.length > 0;
                     const isExpanded = hoveredItem === item.name;
+                    const isActive = isItemActive(item);
                     
                     return (
                       <div key={item.name}>
@@ -119,7 +131,10 @@ export function Header() {
                             <button
                               onMouseEnter={() => setHoveredItem(item.name)}
                               onMouseLeave={() => setHoveredItem(null)}
-                              className="flex items-center justify-between w-full px-3 py-2 text-base font-medium transition-colors hover:text-foreground/80 text-foreground/60"
+                              className={cn(
+                                "flex items-center justify-between w-full px-3 py-2 text-base font-medium transition-colors hover:text-foreground/80",
+                                isActive ? "text-primary bg-muted" : "text-foreground/60"
+                              )}
                             >
                               <span>{item.name}</span>
                               <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -127,7 +142,10 @@ export function Header() {
                           ) : (
                             <Link
                               to={item.href}
-                              className="flex items-center px-3 py-2 text-base font-medium transition-colors hover:text-foreground/80 text-foreground/60"
+                              className={cn(
+                                "flex items-center px-3 py-2 text-base font-medium transition-colors hover:text-foreground/80",
+                                isActive ? "text-primary bg-muted" : "text-foreground/60"
+                              )}
                               onClick={() => setIsMenuOpen(false)}
                             >
                               {item.name}
@@ -138,16 +156,22 @@ export function Header() {
                         {/* 子菜单 */}
                         {hasChildren && isExpanded && (
                           <div className="ml-4 mt-1 space-y-1">
-                            {item.children.map((child: any) => (
-                              <Link
-                                key={child.href}
-                                to={child.href}
-                                className="block px-3 py-2 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
-                                onClick={() => setIsMenuOpen(false)}
-                              >
-                                {child.name}
-                              </Link>
-                            ))}
+                            {item.children.map((child: any) => {
+                              const isChildActive = location.pathname === child.href;
+                              return (
+                                <Link
+                                  key={child.href}
+                                  to={child.href}
+                                  className={cn(
+                                    "block px-3 py-2 text-sm transition-colors hover:text-foreground/80",
+                                    isChildActive ? "text-primary bg-muted" : "text-muted-foreground"
+                                  )}
+                                  onClick={() => setIsMenuOpen(false)}
+                                >
+                                  {child.name}
+                                </Link>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -172,6 +196,7 @@ export function Header() {
               {navigation.map((item) => {
                 const hasChildren = item.children && item.children.length > 0;
                 const isHovered = hoveredItem === item.name;
+                const isActive = isItemActive(item);
                 
                 return (
                   <div 
@@ -182,14 +207,20 @@ export function Header() {
                   >
                     <div className="flex items-center space-x-1">
                       {item.isDirectory ? (
-                        <button className="flex items-center space-x-1 transition-colors hover:text-foreground/80 text-foreground/60">
+                        <button className={cn(
+                          "flex items-center space-x-1 transition-colors hover:text-foreground/80",
+                          isActive ? "text-primary" : "text-foreground/60"
+                        )}>
                           <span>{item.name}</span>
                           <ChevronDown className={`h-4 w-4 transition-transform ${isHovered ? 'rotate-180' : ''}`} />
                         </button>
                       ) : (
                         <Link
                           to={item.href}
-                          className="transition-colors hover:text-foreground/80 text-foreground/60"
+                          className={cn(
+                            "transition-colors hover:text-foreground/80",
+                            isActive ? "text-primary" : "text-foreground/60"
+                          )}
                         >
                           {item.name}
                         </Link>
@@ -199,15 +230,21 @@ export function Header() {
                     {hasChildren && isHovered && (
                       <div className="absolute top-full left-0 mt-1 w-48 bg-background border rounded-md shadow-lg z-50">
                         <div className="py-2">
-                          {item.children.map((child) => (
-                            <Link
-                              key={child.name}
-                              to={child.href}
-                              className="block px-4 py-2 text-sm text-foreground/60 hover:text-foreground/80 hover:bg-muted transition-colors"
-                            >
-                              {child.name}
-                            </Link>
-                          ))}
+                          {item.children.map((child) => {
+                            const isChildActive = location.pathname === child.href;
+                            return (
+                              <Link
+                                key={child.name}
+                                to={child.href}
+                                className={cn(
+                                  "block px-4 py-2 text-sm hover:text-foreground/80 hover:bg-muted transition-colors",
+                                  isChildActive ? "text-primary bg-muted" : "text-foreground/60"
+                                )}
+                              >
+                                {child.name}
+                              </Link>
+                            );
+                          })}
                         </div>
                       </div>
                     )}

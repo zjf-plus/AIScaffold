@@ -77,9 +77,9 @@ export function Sidebar() {
   const { layoutMode, isSidebarOpen } = useLayout();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
-  // 在顶部菜单模式下隐藏侧边栏
+  // 在顶部菜单模式下隐藏侧边栏，但保持组件结构
   if (layoutMode === "topbar") {
-    return null;
+    return <div className="hidden" />;
   }
 
   // 根据当前路由自动展开对应的父菜单

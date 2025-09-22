@@ -7,6 +7,7 @@ interface LayoutContextType {
   setLayoutMode: (mode: LayoutMode) => void;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (open: boolean) => void;
+  isTransitioning: boolean;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
@@ -22,11 +23,17 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   });
   
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const setLayoutMode = (mode: LayoutMode) => {
+    setIsTransitioning(true);
     setLayoutModeState(mode);
     if (typeof window !== "undefined") {
       localStorage.setItem(storageKey, mode);
+      // 立即重新加载页面以避免 hooks 调用顺序问题
+      setTimeout(() => {
+        window.location.reload();
+      }, 0);
     }
   };
 
@@ -42,6 +49,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
     setLayoutMode,
     isSidebarOpen,
     setIsSidebarOpen,
+    isTransitioning,
   };
 
   return (
